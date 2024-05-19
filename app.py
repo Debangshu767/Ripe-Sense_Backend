@@ -12,19 +12,19 @@ loaded_model = load_model(model_path)
 
 class_labels = ['unripe', 'overripe', 'ripe']
 
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
-    # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert to RGB
+def preprocess_image(image_bytes):
+    # Convert image bytes to a numpy array
+    nparr = np.frombuffer(image_bytes, np.uint8)
+    # Decode image from numpy array
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # Resize the image
     img = cv2.resize(img, (64, 64))
-    # img = img / 255.0  # Normalize pixel values
     return img
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     contents = await file.read()
-    with open("temp.png", "wb") as f:
-        f.write(contents)
-    preprocessed_image = preprocess_image("temp.png")
+    preprocessed_image = preprocess_image(contents)
     preprocessed_image = np.expand_dims(preprocessed_image, axis=0)  # Add batch dimension
     predictions = loaded_model.predict(preprocessed_image)
     predicted_class = np.argmax(predictions)
